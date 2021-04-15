@@ -11,6 +11,8 @@ from aria2 import aria2
 from time import sleep
 from typing import List
 from config import config
+import math
+
 logging.basicConfig(level=logging.INFO,
                     datefmt='%Y/%m/%d %H:%M:%S',
                     format='%(asctime)s - %(lineno)d - %(module)s - %(message)s')
@@ -277,14 +279,14 @@ def login_need(id):
 def get_progress_bar(num ,total):
     rate = num / total
     rate_num = int(rate * 100)
-    r = '\r[%s%s] %d %%' % ("⚫"*int(rate_num/10), "⚪"*int((100-rate_num)/10),rate*100)
+    r = '\r[%s%s] %d %%' % ("⚫"*math.floor(rate_num/10), "⚪"*math.ceil((100-rate_num)/10),rate*100)
     return r
 
 if __name__ == '__main__':
     #executor.start_polling(dp, skip_updates=True)
     start_webhook(
         dispatcher=dp,
-        webhook_path=WEBHOOK_PATH,
+        webhook_path='/'+'/'.join(WEBHOOK_URL.split('/')[3:]),
         on_startup=on_startup,
         on_shutdown=on_shutdown,
         skip_updates=True,

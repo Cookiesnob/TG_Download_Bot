@@ -87,7 +87,10 @@ class db:
             for re in res:
                 key=re
                 if id in re:
-                    data.remove(url)
+                    try:
+                        data.remove(url)
+                    except:
+                        pass
                     flag=False
                     break
             if flag:
