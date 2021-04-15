@@ -244,11 +244,13 @@ async def update(gids:List=[],msg=[]):
     if gids==[]:
         await bot.send_message(msg.chat.id,'没有下载任务')
         return
+    flag=[0 for _ in range(len(gids))]
     while True:
         datas=aria2.get_downloads(gids)
         if datas==[]:
             break
         text=''
+        i=0
         for data in datas:
             gid=data[0]
             name=data[1]
@@ -259,9 +261,14 @@ async def update(gids:List=[],msg=[]):
             progress=str(get_progress_bar(data[3],data[4]))
             if completed==total:
                 sql.update_status(gid,100)
+                flag[i]=1
             text+=f'<b>Name</b> : <b>{name}</b>\n<b>Status</b> : <b>{status}</b>\n<b>Speed</b> : <b>{speed}</b>\n<b>Downloaded</b> : <b>{completed} of {total}</b>\n<b>Progress</b> : <b>{progress}</b>\n<b>Gid</b>: <b><code>{gid}</code></b>\n\n'
+            i+=1
         await bot.edit_message_text(text,parse_mode='HTML',chat_id=msg.chat.id,message_id=msg.message_id)
-        sleep(1)
+        if list(set(flag))==[1]:
+            await bot.send_message(msg.chat.id,'所有下载任务已完成')
+            break
+        sleep(2)
 
 def converbit(length):
     lis=['B','KB','MB','GB','TB']
