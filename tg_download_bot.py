@@ -45,7 +45,7 @@ sql.author(admin,1)
 
 #设置刷新窗口
 flash={}
-
+tmp={}
 
 #设置允许用户清单
 user_id_required=sql.get_user_list(1)
@@ -87,7 +87,7 @@ async def bind(message:types.message):
 @dp.message_handler(commands=['link'])
 async def link(message:types.message):
     magnet_pat=r'(magnet:\?xt=urn:btih:[a-zA-Z0-9]*)'
-    http_pat=r"(?:(?:https?|ftp):\/\/)?[\w/\-?=%.]+\.[\w/\-?=%.]+"
+    http_pat=r"(?:(?:https?|ftp):\/\/)?[\w/\-?=%.]+\.[\w/\()-?=%.]+"
     id=message.chat.id
     if login_need(id):
         return
@@ -133,6 +133,8 @@ async def status(message:types.message):
     gid=[]
     for data in datas:
         gid.append(data[0])
+    global tmp
+    tmp[id]=gid
     msg=await bot.send_message(id,'等待更新状态。。。')
     try:
         data=flash[id]
@@ -165,8 +167,13 @@ async def cancel(message:types.message):
             data=flash[id]
             data[2].cancel()
             await bot.delete_message(data[0],data[1])
+            global tmp
+            for key,value in tmp.items():
+                if key==id:
+                    value.remove(gid[0])
+                    break
             msg=await bot.send_message(id,'更新状态。。。')
-            task = asyncio.create_task(update(gids=gid,msg=msg))
+            task = asyncio.create_task(update(gids=value,msg=msg))
             flash[id]=[msg.chat.id,msg.message_id,task]
             return
         await bot.send_message(id,'取消失败，文件不存在或重试')
@@ -262,7 +269,11 @@ async def update(gids:List=[],msg=[]):
             if completed==total:
                 sql.update_status(gid,100)
                 flag[i]=1
-            text+=f'<b>Name</b> : <b>{name}</b>\n<b>Status</b> : <b>{status}</b>\n<b>Speed</b> : <b>{speed}</b>\n<b>Downloaded</b> : <b>{completed} of {total}</b>\n<b>Progress</b> : <b>{progress}</b>\n<b>Gid</b>: <b><code>{gid}</code></b>\n\n'
+            if flag[i]==1:
+                progress=str(get_progress_bar(data[4],data[4]))
+                text+=f'<b>Name</b> : <b>{name}</b>\n<b>Status</b> : <b>{status}</b>\n<b>Speed</b> : <b>{speed}</b>\n<b>Downloaded</b> : <b>{total} of {total}</b>\n<b>Progress</b> : <b>{progress}</b>\n<b>Gid</b>: <b><code>{gid}</code></b>\n\n'
+            else:
+                text+=f'<b>Name</b> : <b>{name}</b>\n<b>Status</b> : <b>{status}</b>\n<b>Speed</b> : <b>{speed}</b>\n<b>Downloaded</b> : <b>{completed} of {total}</b>\n<b>Progress</b> : <b>{progress}</b>\n<b>Gid</b>: <b><code>{gid}</code></b>\n\n'
             i+=1
         await bot.edit_message_text(text,parse_mode='HTML',chat_id=msg.chat.id,message_id=msg.message_id)
         if list(set(flag))==[1]:
@@ -284,6 +295,8 @@ def login_need(id):
     return True
 
 def get_progress_bar(num ,total):
+    if total==0:
+        return get_progress_bar(0,1)
     rate = num / total
     rate_num = int(rate * 100)
     r = '\r[%s%s] %d %%' % ("⚫"*math.floor(rate_num/10), "⚪"*math.ceil((100-rate_num)/10),rate*100)
