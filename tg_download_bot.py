@@ -168,10 +168,13 @@ async def cancel(message:types.message):
             data[2].cancel()
             await bot.delete_message(data[0],data[1])
             global tmp
+            value=[]
             for key,value in tmp.items():
                 if key==id:
                     value.remove(gid[0])
                     break
+            if value==[]:
+                return
             msg=await bot.send_message(id,'更新状态。。。')
             task = asyncio.create_task(update(gids=value,msg=msg))
             flash[id]=[msg.chat.id,msg.message_id,task]
